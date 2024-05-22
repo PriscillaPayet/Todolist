@@ -11,11 +11,14 @@ const app = {
         newTaskButton.addEventListener('click', app.handleNewTaskButtonClick);
 
         // soumission du formulaire d'ajout d'une tâche : 
-        const newTaskForm = document.querySelector('.modal-dialog form');
-        newTaskForm.addEventListener('submit', app.handleNewTaskFormSubmit);
+        const newTaskForm = document.querySelector('.addBtn');
+        newTaskForm.addEventListener('click', app.handleNewTaskFormSubmit);
 
-        // au chargement de l'appli, on doit remplir le select dans le form d'ajout de tâche
-        app.loadCategoriesFromAPI();
+        // soumission du formulaire d'ajout d'une tâche : 
+        const editTaskForm = document.querySelector('.editBtn');
+        editTaskForm.addEventListener('click', app.handleEditTaskFormSubmit);
+
+       
     },
 
     handleNewTaskButtonClick: function() {
@@ -25,7 +28,13 @@ const app = {
         const modal = document.querySelector('.modal-dialog');
         // on lui ajoute la classe show
         modal.classList.add('show');
+
+        //on masque le bouton de modification
+        const editBtn=document.querySelector('.editBtn');
+        editBtn.classList.add('hidden');
+
     },
+
 
     handleNewTaskFormSubmit: async function(event) {
         // le form d'ajout de tâche a été soumis !
@@ -34,19 +43,21 @@ const app = {
         event.preventDefault();
 
         // 1. on récupère les données du form
-        const form = event.currentTarget;
-        const title = document.querySelector('#task-title').value;
-        const category_id = form.querySelector('select').value;
+        const form = document.querySelector(".modal-dialog form");
+        const name = document.querySelector('#task-name').value;
 
-        //console.log("Catégorie sélectionnée : " + category_id);
+        console.log("Nom de la tâche à ajouter : ", name);
+
+        
+
 
         // 2. on envoi ces données via une requête HTTP POST à l'API
         try {
             const response = await fetch('http://localhost:8000/api/tasks', {
                 method: 'POST',
                 body: JSON.stringify({
-                    title: title,
-                    category_id: category_id
+                    name:name
+                   
                 }),
                 headers: {
                     'Content-type': 'application/json'
@@ -107,6 +118,8 @@ const app = {
     },
 
     updateDOM: function(tasks) {
+        const ul = document.querySelector('.tasklist');
+        ul.innerHTML = '';
         // ajoute les tâches dans le DOM
 
         // on boucle sur les tâches
@@ -176,6 +189,9 @@ const app = {
         const id = li.dataset.id;
         // console.log(id);
 
+        const taskIdInput = document.querySelector('#task-id');
+        taskIdInput.value = id;
+
         //on veut ouvrir le pop-up 
         // on sélectionne le popup
         const modal = document.querySelector('.modal-dialog');
@@ -186,10 +202,13 @@ const app = {
         const formTitle = document.querySelector('form h2');
         formTitle.textContent = "Modifier la tâche";
 
-        const formBtn = document.querySelector('form button');
-        formBtn.textContent = "Modifier";
+        const addBtn = document.querySelector('.addBtn');
+        addBtn.classList.add('hidden');
+
+        const editBtn = document.querySelector('.editBtn');
+        editBtn.classList.remove('hidden');
         
-        //on fait un requête get pour obtenir les informations de la tĉhe en fonction de l'id
+        //on fait un requête get pour obtenir les informations de la tâche en fonction de l'id
 
         try {
             const response = await fetch('http://localhost:8000/api/tasks/' + id);
@@ -197,18 +216,77 @@ const app = {
             const task = await response.json();
 
         
-        //on préremplit la tâche en allant chercher les info du li
-        const taskTitleInput = document.querySelector('#task-title');
-        taskTitleInput.value=task.title;
+        //on préremplit la tâche en allant chercher les info du li 
+        //on va faire une requête GET pour remplir le place older
+        const tasknameInput = document.querySelector('#task-name');
+        tasknameInput.value=task.name;
         } else {
             console.error("Impossible de récupérer les détails de la tâche : code erreur " + response.status);
         }
         } catch (error) {
         console.error("Erreur rencontrée lors de la récupération des détails de la tâche : " + error);
 
-        //on va faire une requête GET pour remplir le place older
+       
         }
     },
+
+    handleEditTaskFormSubmit: async function(event){
+
+        // 0. on bloque le comportement par défaut du form
+         event.preventDefault();
+       
+       // 1. on récupère les données 
+       const name = document.querySelector('#task-name').value;
+       const id = document.querySelector('#task-id').value;
+       
+       
+       console.log("Nouveau nom de la tâche : ", name, id);
+
+       try {
+        // on fait une requête HTTP DELETE vers l'API
+        const response = await fetch('http://localhost:8000/api/tasks/' + id, {
+            method: 'PUT',
+            body: JSON.stringify({
+                name:name
+               
+            }),
+            headers: {
+                'Content-type': 'application/json'
+            }
+        });
+        // on vérifie le code retour HTTP de l'API
+        if(response.status === 404) {
+            // la tâche à modifier n'a pas été trouvée ! 
+            console.error("Impossible de modifier la tâche : elle n'existe pas !");
+            //alert("la tâche n'existe pas !");
+          
+        } else if (response.status === 200) {
+            // 200 OK, tout s'est bien passé.
+            
+            
+            // pour debug
+            console.info("modification de la tâche effectuée avec succès.");
+
+            // Vider le formulaire
+            document.querySelector('.modal-dialog form').reset();
+            
+            // Fermer le formulaire en retirant la classe 'show'
+            document.querySelector('.modal-dialog').classList.remove('show');
+
+            app.loadFromAPI();
+
+
+        } else {
+            // autre erreur, probablement une erreur 500 mais ça marchera aussi pour les autres erreurs
+            // erreur coté serveur (problème de connexion à la bdd par exemple)
+            console.error("Impossible de modifier la tâche : erreur serveur.");
+        } 
+    } catch(error) {
+        // ce message d'erreur s'affiche en cas de non réponse de l'API (problème réseau, serveur HS, etc.)
+        console.error("Impossible de modifier la tâche : le serveur ne répond pas.");
+    }
+
+   },
 
     addTaskToList: function(task) {
         // cette fonction ajoute une tâche (fournie en param) à la liste ul dans le DOM
@@ -224,18 +302,9 @@ const app = {
 
         // on fait les modifs nécessaire sur notre template
         const p = clone.querySelector('p');
-        p.textContent = task.title;
+        p.textContent = task.name;
         const li = clone.querySelector('li');
         li.dataset.id = task.id;
-
-        // ajout de la catégorie
-        const em = clone.querySelector('em');
-        // on vérifie si la tâche a une catégorie, ou si elle est nulle
-        if(task.category === null) {
-            em.textContent = "non catégorisé";
-        } else {
-            em.textContent = task.category.name;
-        }
         
         // on ajoute l'écouteur d'évènement sur le bouton supprimer
         const supprBtn = clone.querySelector('.delete');
@@ -249,42 +318,7 @@ const app = {
         ul.appendChild(clone);
     },
 
-    loadCategoriesFromAPI: async function() {
-
-        // on sélectionne le select à remplir
-        const select = document.querySelector('.modal-dialog select');
-
-        // on envoi une requête HTTP GET vers http://127.0.0.1:8000/api/categories
-        try {
-            const response = await fetch('http://127.0.0.1:8000/api/categories');
-
-            // on vérifie le status de la réponse
-            if(response.status === 200) {
-                // requête OK !
-
-                // on récupère les résultats
-                const categories = await response.json();
-
-                // on parcourt les categories récupérées
-                for(const category of categories) {
-                    // pour chaque catégorie, on créé une nouvelle balise option
-                    const option = document.createElement('option');
-                    option.textContent = category.name;
-                    option.value = category.id;
-
-                    // et on l'ajoute au select !
-                    select.appendChild(option);
-                }
-
-                console.info("Chargement des catégories OK !");
-                
-            } else {
-                console.error("Erreur serveur rencontrée (500).");
-            }
-        } catch (error) {
-            console.error("Erreur rencontrée : " + error);
-        }
-    }
+    
 };
 
 document.addEventListener('DOMContentLoaded', app.init);

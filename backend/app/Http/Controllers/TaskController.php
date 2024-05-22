@@ -32,7 +32,8 @@ class TaskController extends Controller {
   public function create(Request $request)
   {
       // 0. on récupère les données reçues
-
+      
+     
       // au préalable, on valide les données en utilisant des contraintes de validation
       $validator = Validator::make($request->input(), [
           'name' => ['required', 'filled', 'unique:tasks,name'],
@@ -52,7 +53,7 @@ class TaskController extends Controller {
       $task = new Task();
 
       // 2. remplir les propriétés de cet objet
-      $task->tname = $name;
+      $task->name = $name;
      
 
       // 3. on le sauvegarde
@@ -68,6 +69,8 @@ class TaskController extends Controller {
 
   public function update(Request $request, $id)
   {
+  
+   
       // pour la modification, on essaye d'abord de récupérer l'objet à modifier, avant de valider les données reçues !
 
       // 1. récupérer l'objet Task à modifier
@@ -82,7 +85,7 @@ class TaskController extends Controller {
 
       // au préalable, on valide les données en utilisant des contraintes de validation
       $validator = Validator::make($request->input(), [
-          'name' => ['required', 'filled', 'unique:tasks,name'],
+          'name' => ['required', 'filled', 'unique:tasks,name']
     
       ]);
 

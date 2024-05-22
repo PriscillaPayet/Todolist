@@ -8,4 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class Task extends Model {
 
     protected $table = 'tasks';
+    protected $primaryKey = 'id'; // 'id' est bien la clé primaire
+    public $timestamps = false;
 }
