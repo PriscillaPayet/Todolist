@@ -29,9 +29,16 @@ const app = {
         // on lui ajoute la classe show
         modal.classList.add('show');
 
+        const formTitle = document.querySelector('form h2');
+        formTitle.textContent = "Nouvelle tâche";
+
         //on masque le bouton de modification
         const editBtn=document.querySelector('.editBtn');
         editBtn.classList.add('hidden');
+
+        //on masque le bouton de modification
+        const addBtn=document.querySelector('.addBtn');
+        addBtn.classList.remove('hidden');
 
     },
 
@@ -267,13 +274,15 @@ const app = {
             // pour debug
             console.info("modification de la tâche effectuée avec succès.");
 
-            // Vider le formulaire
-            document.querySelector('.modal-dialog form').reset();
+            
             
             // Fermer le formulaire en retirant la classe 'show'
             document.querySelector('.modal-dialog').classList.remove('show');
 
             app.loadFromAPI();
+
+            // Vider le formulaire
+            document.querySelector('.modal-dialog form').reset();
 
 
         } else {
